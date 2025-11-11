@@ -1,0 +1,9 @@
+import { View, Text } from "react-native";
+
+export default function Collection() {
+    return (
+        <View>
+            <Text>Collection</Text>
+        </View>
+    );
+}
