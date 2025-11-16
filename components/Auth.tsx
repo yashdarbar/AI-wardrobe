@@ -162,7 +162,8 @@ const styles = StyleSheet.create({
     buttonText: {
         fontSize: 18,
         fontWeight: "600",
-        color: "#fff",
+        // color: "#fff",
+        color: "#111",
     },
     primaryButton: {
         backgroundColor: "#007bff", // Blue for primary action (Sign In)

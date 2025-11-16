@@ -3,7 +3,7 @@ import "./globals.css";
 
 export default function RootLayout() {
     return (
-        <Stack>
+        <Stack initialRouteName="index">
             <Stack.Screen name="(tabs)" options={{ title: "Wardrobe", headerShown: false }} />
             <Stack.Screen name="index" options={{ title: "Home", headerShown: false }} />
             {/* <Stack.Screen name="pairChat" options={{ title: "Pair Chat", headerShown: false }} /> */}
