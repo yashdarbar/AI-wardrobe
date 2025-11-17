@@ -4,6 +4,7 @@ export default function Collection() {
     return (
         <View>
             <Text>Collection</Text>
+            <Text>jhjjhg</Text>
         </View>
     );
 }
