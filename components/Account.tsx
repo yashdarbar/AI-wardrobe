@@ -13,10 +13,9 @@ import { Session } from "@supabase/supabase-js";
 
 // Helper component for styled text input
 const LabeledInput = ({ label, value, onChangeText, disabled = false }) => (
-    <View style={styles.inputContainer}>
-        <Text style={styles.label}>{label}</Text>
+    <View>
+        <Text >{label}</Text>
         <TextInput
-            style={styles.input}
             value={value}
             onChangeText={onChangeText}
             editable={!disabled}
@@ -29,7 +28,7 @@ const LabeledInput = ({ label, value, onChangeText, disabled = false }) => (
 export default function Account({ session }: { session: Session }) {
     const [loading, setLoading] = useState(true);
     const [username, setUsername] = useState("");
-    const [website, setWebsite] = useState("");
+    // const [website, setWebsite] = useState("");
     const [avatarUrl, setAvatarUrl] = useState("");
 
     // useEffect and getProfile remain identical
@@ -44,7 +43,7 @@ export default function Account({ session }: { session: Session }) {
 
             const { data, error, status } = await supabase
                 .from("profiles")
-                .select(`username, website, avatar_url`)
+                .select(`username, avatar_url`)
                 .eq("id", session?.user.id)
                 .single();
             if (error && status !== 406) {
@@ -53,7 +52,7 @@ export default function Account({ session }: { session: Session }) {
 
             if (data) {
                 setUsername(data.username);
-                setWebsite(data.website);
+                // setWebsite(data.website);
                 setAvatarUrl(data.avatar_url);
             }
         } catch (error) {
@@ -68,11 +67,9 @@ export default function Account({ session }: { session: Session }) {
     // updateProfile remains identical
     async function updateProfile({
         username,
-        website,
         avatar_url,
     }: {
         username: string;
-        website: string;
         avatar_url: string;
     }) {
         try {
@@ -82,7 +79,6 @@ export default function Account({ session }: { session: Session }) {
             const updates = {
                 id: session?.user.id,
                 username,
-                website,
                 avatar_url,
                 updated_at: new Date(),
             };
@@ -106,7 +102,7 @@ export default function Account({ session }: { session: Session }) {
     }
 
     return (
-        <View style={styles.container}>
+        <View>
             {/* Email (Disabled Input) */}
             <LabeledInput label="Email" value={session?.user?.email} disabled />
 
@@ -117,94 +113,83 @@ export default function Account({ session }: { session: Session }) {
                 onChangeText={setUsername}
             />
 
-            {/* Website Input */}
-            <LabeledInput
-                label="Website"
-                value={website || ""}
-                onChangeText={setWebsite}
-            />
-
             {/* Update Button (Pressable) */}
             <Pressable
                 style={({ pressed }) => [
-                    styles.button,
-                    styles.updateButton,
                     { opacity: pressed || loading ? 0.6 : 1 },
                 ]}
                 onPress={() =>
-                    updateProfile({ username, website, avatar_url: avatarUrl })
+                    updateProfile({ username, avatar_url: avatarUrl })
                 }
                 disabled={loading}
             >
-                <Text style={styles.buttonText}>
+                <Text>
                     {loading ? "Loading ..." : "Update"}
                 </Text>
             </Pressable>
 
             {/* Sign Out Button (Pressable) */}
             <Pressable
-                style={({ pressed }) => [
-                    styles.button,
-                    styles.signOutButton,
-                    { opacity: pressed ? 0.8 : 1 },
-                ]}
+                // style={({ pressed }) => [
+                    // { opacity: pressed ? 0.8 : 1 },
+                // ]}
                 onPress={() => supabase.auth.signOut()}
             >
-                <Text style={styles.signOutText}>Sign Out</Text>
+                <Text>Sign Out</Text>
             </Pressable>
         </View>
     );
 }
 
-const styles = StyleSheet.create({
-    container: {
-        marginTop: 40,
-        paddingHorizontal: 20, // Adjusted padding for better fit
-    },
-    // --- Input Styles ---
-    inputContainer: {
-        paddingVertical: 8,
-    },
-    label: {
-        fontSize: 16,
-        fontWeight: "bold",
-        marginBottom: 4,
-        color: "#333",
-    },
-    input: {
-        height: 44,
-        borderColor: "#ccc",
-        borderWidth: 1,
-        borderRadius: 8,
-        paddingHorizontal: 10,
-        fontSize: 16,
-        backgroundColor: "#fff",
-    },
-    // --- Button Styles ---
-    button: {
-        height: 48,
-        borderRadius: 8,
-        alignItems: "center",
-        justifyContent: "center",
-        marginTop: 15,
-    },
-    buttonText: {
-        fontSize: 18,
-        fontWeight: "600",
-        color: "#fff",
-    },
-    updateButton: {
-        backgroundColor: "#007bff", // Standard blue color
-        marginBottom: 8,
-    },
-    signOutButton: {
-        backgroundColor: "#f8f8f8", // Light gray background
-        borderColor: "#ccc",
-        borderWidth: 1,
-    },
-    signOutText: {
-        fontSize: 18,
-        fontWeight: "600",
-        color: "#dc3545", // Red text color
-    },
-});
+// const styles = StyleSheet.create({
+//     container: {
+//         marginTop: 40,
+//         paddingHorizontal: 20, // Adjusted padding for better fit
+//     },
+//     // --- Input Styles ---
+//     inputContainer: {
+//         paddingVertical: 8,
+//     },
+//     label: {
+//         fontSize: 16,
+//         fontWeight: "bold",
+//         marginBottom: 4,
+//         color: "#333",
+//     },
+//     input: {
+//         height: 44,
+//         borderColor: "#ccc",
+//         borderWidth: 1,
+//         borderRadius: 8,
+//         paddingHorizontal: 10,
+//         fontSize: 16,
+//         backgroundColor: "#fff",
+//     },
+//     // --- Button Styles ---
+//     button: {
+//         height: 48,
+//         borderRadius: 8,
+//         alignItems: "center",
+//         justifyContent: "center",
+//         marginTop: 15,
+//     },
+//     buttonText: {
+//         fontSize: 18,
+//         fontWeight: "600",
+//         color: "#fff",
+//     },
+//     updateButton: {
+//         backgroundColor: "#007bff", // Standard blue color
+//         marginBottom: 8,
+//     },
+//     signOutButton: {
+//         backgroundColor: "#f8f8f8", // Light gray background
+//         borderColor: "#ccc",
+//         borderWidth: 1,
+//     },
+//     signOutText: {
+//         fontSize: 18,
+//         fontWeight: "600",
+//         color: "#dc3545", // Red text color
+//     },
+// });

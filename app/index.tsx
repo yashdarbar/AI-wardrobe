@@ -20,9 +20,7 @@ export default function Index() {
 
     return (
         <View className="flex-1 items-center justify-center bg-white">
-            <Text className="text-2xl font-bold mb-4">
-                👕 AI Wardrobe Assistant
-            </Text>
+            {/* <Text className="text-2xl font-bold mb-4">👕 AI Wardrobe</Text> */}
             {/* <Text className="text-gray-500 mb-8">Organize. Style. Try-on.</Text>
 
           <Link href="/(tabs)" asChild>
