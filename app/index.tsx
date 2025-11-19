@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import Account from "@/components/Account";
 import Auth from "@/components/Auth";
+import Landing from "@/components/Landing";
 
 export default function Index() {
     const [session, setSession] = useState<Session | null>(null);
@@ -31,7 +32,8 @@ export default function Index() {
               </TouchableOpacity>
           </Link> */}
             {session && session.user ? (
-                <Account key={session.user.id} session={session} />
+                <Landing />
+                // <Account key={session.user.id} session={session} />
             ) : (
                 <Auth />
             )}

@@ -52,7 +52,6 @@ export default function Account({ session }: { session: Session }) {
 
             if (data) {
                 setUsername(data.username);
-                // setWebsite(data.website);
                 setAvatarUrl(data.avatar_url);
             }
         } catch (error) {
@@ -76,10 +75,11 @@ export default function Account({ session }: { session: Session }) {
             setLoading(true);
             if (!session?.user) throw new Error("No user on the session!");
 
+            // console.log("Yashhh", session?.user.id);
+
             const updates = {
                 id: session?.user.id,
                 username,
-                avatar_url,
                 updated_at: new Date(),
             };
 
@@ -103,8 +103,6 @@ export default function Account({ session }: { session: Session }) {
 
     return (
         <View>
-            {/* Email (Disabled Input) */}
-            <LabeledInput label="Email" value={session?.user?.email} disabled />
 
             {/* Username Input */}
             <LabeledInput
@@ -112,12 +110,14 @@ export default function Account({ session }: { session: Session }) {
                 value={username || ""}
                 onChangeText={setUsername}
             />
+            <Text>User ka name: {username}</Text>
 
             {/* Update Button (Pressable) */}
             <Pressable
                 style={({ pressed }) => [
                     { opacity: pressed || loading ? 0.6 : 1 },
                 ]}
+                className="m-5 bg-gray-500 text-white"
                 onPress={() =>
                     updateProfile({ username, avatar_url: avatarUrl })
                 }
@@ -141,55 +141,3 @@ export default function Account({ session }: { session: Session }) {
     );
 }
 
-// const styles = StyleSheet.create({
-//     container: {
-//         marginTop: 40,
-//         paddingHorizontal: 20, // Adjusted padding for better fit
-//     },
-//     // --- Input Styles ---
-//     inputContainer: {
-//         paddingVertical: 8,
-//     },
-//     label: {
-//         fontSize: 16,
-//         fontWeight: "bold",
-//         marginBottom: 4,
-//         color: "#333",
-//     },
-//     input: {
-//         height: 44,
-//         borderColor: "#ccc",
-//         borderWidth: 1,
-//         borderRadius: 8,
-//         paddingHorizontal: 10,
-//         fontSize: 16,
-//         backgroundColor: "#fff",
-//     },
-//     // --- Button Styles ---
-//     button: {
-//         height: 48,
-//         borderRadius: 8,
-//         alignItems: "center",
-//         justifyContent: "center",
-//         marginTop: 15,
-//     },
-//     buttonText: {
-//         fontSize: 18,
-//         fontWeight: "600",
-//         color: "#fff",
-//     },
-//     updateButton: {
-//         backgroundColor: "#007bff", // Standard blue color
-//         marginBottom: 8,
-//     },
-//     signOutButton: {
-//         backgroundColor: "#f8f8f8", // Light gray background
-//         borderColor: "#ccc",
-//         borderWidth: 1,
-//     },
-//     signOutText: {
-//         fontSize: 18,
-//         fontWeight: "600",
-//         color: "#dc3545", // Red text color
-//     },
-// });

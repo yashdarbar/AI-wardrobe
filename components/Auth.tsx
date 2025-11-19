@@ -76,7 +76,7 @@ export default function Auth() {
     }
 
     return (
-        <View className="flex-1 flex-col  items-center justify-center bground p-4 w-full">
+        <View className="flex-1 flex-col items-center justify-center p-4 w-full">
             <View className="flex-col justify-center items-center mb-10">
                 <Text className="text-3xl font-bold">
                     {isSignUp ? "Create Account" : "Welcome"}
@@ -110,7 +110,7 @@ export default function Auth() {
                         { opacity: pressed || loading ? 0.6 : 1 },
                     ]}
                     className="p-2 w-full justify-center items-center bg-primary border border-primary rounded-lg"
-                    onPress={isSignUp ? signInWithEmail : signUpWithEmail}
+                    onPress={isSignUp ? signUpWithEmail : signInWithEmail}
                     disabled={loading}
                 >
                     <Text className="text-white">
@@ -138,53 +138,3 @@ export default function Auth() {
         </View>
     );
 }
-
-// const styles = StyleSheet.create({
-//     container: {
-//         marginTop: 40,
-//         paddingHorizontal: 20,
-//     },
-//     // --- Input Styles ---
-//     inputContainer: {
-//         paddingVertical: 8,
-//     },
-//     label: {
-//         fontSize: 16,
-//         fontWeight: "bold",
-//         marginBottom: 4,
-//         color: "#333",
-//     },
-//     input: {
-//         height: 44,
-//         borderColor: "#ccc",
-//         borderWidth: 1,
-//         borderRadius: 8,
-//         paddingHorizontal: 10,
-//         fontSize: 16,
-//         backgroundColor: "#fff",
-//     },
-//     // --- Button Styles ---
-//     button: {
-//         height: 48,
-//         borderRadius: 8,
-//         alignItems: "center",
-//         justifyContent: "center",
-//         marginTop: 15,
-//     },
-//     buttonText: {
-//         fontSize: 18,
-//         fontWeight: "600",
-//         // color: "#fff",
-//         color: "#111",
-//     },
-//     primaryButton: {
-//         backgroundColor: "#007bff", // Blue for primary action (Sign In)
-//     },
-//     secondaryButton: {
-//         backgroundColor: "#6c757d", // Gray for secondary action (Sign Up)
-//     },
-//     // --- Spacing ---
-//     mt20: {
-//         marginTop: 20,
-//     },
-// });
