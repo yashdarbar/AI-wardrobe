@@ -1,29 +1,33 @@
-import { Text, View, TouchableOpacity } from "react-native";
-import { Link } from "expo-router";
+import { View } from "react-native";
 import "./globals.css";
-import { Session } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import Account from "@/components/Account";
 import Auth from "@/components/Auth";
 import Landing from "@/components/Landing";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export default function Index() {
-    const [session, setSession] = useState<Session | null>(null);
+    const { session, setSession, isLoaded, setIsLoaded } = useAuthStore();
+
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session);
+            setIsLoaded(true);
         });
-        supabase.auth.onAuthStateChange((_event, session) => {
+
+        const {
+            data: { subscription },
+        } = supabase.auth.onAuthStateChange((_event, session) => {
             setSession(session);
         });
+
+        return () => subscription.unsubscribe();
     }, []);
 
     return (
         <View className="flex-1 items-center justify-center bg-white">
-            {/* <Text className="text-2xl font-bold mb-4">👕 AI Wardrobe</Text> */}
-            {/* <Text className="text-gray-500 mb-8">Organize. Style. Try-on.</Text>
-
+            {/*
           <Link href="/(tabs)" asChild>
               <TouchableOpacity className="bg-black px-6 py-3 rounded-2xl">
                   <Text className="text-white font-semibold">
@@ -33,8 +37,8 @@ export default function Index() {
           </Link> */}
             {session && session.user ? (
                 <Landing />
-                // <Account key={session.user.id} session={session} />
             ) : (
+                // <Account key={session.user.id} session={session} />
                 <Auth />
             )}
         </View>
