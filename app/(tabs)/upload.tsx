@@ -1,201 +1,376 @@
 import React, { useState } from "react";
-import { SafeAreaView } from "react-native-safe-area-context"
 import {
-    ScrollView,
     View,
     Text,
+    ScrollView,
     Pressable,
+    Image,
     TextInput,
-    StatusBar,
+    ActivityIndicator,
+    LayoutAnimation,
+    Platform,
+    UIManager,
+    KeyboardAvoidingView,
+    Alert,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import { Plus } from "lucide-react-native";
+import { Plus, X, Wand2, Save, Camera } from "lucide-react-native";
 
-/**
- * UploadScreen - Pixel-faithful conversion of the provided HTML into
- * React Native + Expo + NativeWind classes.
- */
+// Custom Hooks
+import { useUpload } from "@/hooks/useUpload";
+import { useGemini } from "@/hooks/useGemini";
+import { useRouter } from "expo-router";
+
+// Enable smooth animations on Android
+if (
+    Platform.OS === "android" &&
+    UIManager.setLayoutAnimationEnabledExperimental
+) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
 export default function Upload() {
-    const [clothingType, setClothingType] = useState(null); // "Top" | "Bottom" | "Footwear"
+    // --- STATE ---
+    const [clothingType, setClothingType] = useState<string | null>(null);
     const [description, setDescription] = useState("");
-    const [isUploading, setIsUploading] = useState(false);
+    const [tags, setTags] = useState<string[]>([]);
+    const [currentTag, setCurrentTag] = useState("");
+    const router = useRouter();
 
-    const clothingOptions = ["Top", "Bottom", "Footwear"];
+    // Controls whether the details form is visible
+    const [formVisible, setFormVisible] = useState(false);
 
-    function handleUploadPress() {
-        // placeholder upload action
-        setIsUploading(true);
-        setTimeout(() => setIsUploading(false), 1000);
-    }
+    // --- HOOKS ---
+    // useUpload handles the "Logistics" (Picker + Supabase Upload)
+    const { imageUri, imageBase64, pickImage, uploadItem, isUploading } =
+        useUpload();
+
+    // useGemini handles the "Intelligence" (Google AI Analysis)
+    const { analyzeImage, isAnalyzing } = useGemini();
+
+    const clothingOptions = ["top", "bottom", "footwear"];
+
+    // --- HANDLERS ---
+
+    // 1. Pick Image
+    const handleImagePicked = async () => {
+        await pickImage();
+        // Reset form state when a new image is picked
+        setFormVisible(false);
+        setClothingType(null);
+        setDescription("");
+        setTags([]);
+    };
+
+    // 2. Generate AI Details
+    const handleGenerate = async () => {
+        if (!imageBase64) return;
+
+        // Triggers the AI hook
+        const result = await analyzeImage(imageBase64);
+
+        if (result) {
+            // Auto-fill state
+            if (result.category && clothingOptions.includes(result.category)) {
+                setClothingType(result.category);
+            }
+            if (result.description) setDescription(result.description);
+            if (result.tags) setTags(result.tags);
+
+            // Smoothly reveal the form
+            LayoutAnimation.configureNext(
+                LayoutAnimation.Presets.easeInEaseOut
+            );
+            setFormVisible(true);
+        }
+    };
+
+    // 3. Manual Fallback
+    const handleManualEntry = () => {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        setFormVisible(true);
+    };
+
+    // 4. Tag Logic
+    const handleAddTag = () => {
+        if (currentTag.trim().length > 0 && !tags.includes(currentTag.trim())) {
+            setTags([...tags, currentTag.trim()]);
+            setCurrentTag("");
+        }
+    };
+    const handleRemoveTag = (tagToRemove: string) => {
+        setTags(tags.filter((t) => t !== tagToRemove));
+    };
+
+    // 5. Final Save
+    const handleSave = async () => {
+        if (isUploading) {
+            return;
+        }
+
+        if (!clothingType) {
+            Alert.alert(
+                "Missing Category",
+                "Please select a clothing category before saving your item."
+            );
+            return;
+        }
+
+        const uploadSuccessful = await uploadItem(
+            clothingType,
+            description,
+            tags
+        );
+
+        if (uploadSuccessful) {
+            Alert.alert("Success", "Item added to your wardrobe!");
+            resetForm();
+        }
+
+        // if (clothingType) {
+        // const uploadSuccessful = await uploadItem(clothingType, description, tags);
+
+        // if (uploadSuccessful) {
+        //     Alert.alert('Success', 'Item added to your wardrobe!');
+        //     resetForm();
+        // }
+        // resetForm();
+        // router.back();
+        // }
+    };
+
+    const resetForm = () => {
+        setClothingType(null);
+        setDescription("");
+        setTags([]);
+        setCurrentTag("");
+
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        setFormVisible(false);
+    };
 
     return (
         <SafeAreaView className="flex-1 bg-slate-50">
-            {/* <StatusBar barStyle={"light-content"}/> */}
+            {/* Header */}
             <View className="flex flex-row items-center bg-slate-50 p-4 pb-2 justify-between">
-                <Pressable className="w-10 h-10 items-center justify-center">
+                <Pressable
+                    onPress={() => router.back()}
+                    className="w-10 h-10 items-center justify-center"
+                >
                     <Feather name="arrow-left" size={24} color="#0e171b" />
                 </Pressable>
-
                 <Text className="text-[#0e171b] text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">
                     Upload
                 </Text>
-
-                {/* spacer so title centers */}
                 <View className="w-10" />
             </View>
-            <ScrollView
-                contentContainerStyle={{
-                    minHeight: "100%",
-                    flexGrow: 1,
-                    paddingBottom: 150,
-                    // marginBottom: 80,
-                }}
-                showsVerticalScrollIndicator={false}
-                className="min-h-screen"
-                keyboardShouldPersistTaps="handled"
+
+            <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                className="flex-1"
             >
-                <View className="flex-1 justify-between">
-                    {/* Header */}
-                    <View>
-                        <Text className="text-[#0e171b] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-2 pt-5">
-                            Clothing Type
-                        </Text>
-
-                        {/* Radio options */}
-                        <View className="flex flex-row flex-wrap gap-3 p-3">
-                            {clothingOptions.map((opt) => {
-                                const checked = clothingType === opt;
-                                return (
-                                    <Pressable
-                                        key={opt}
-                                        onPress={() => setClothingType(opt)}
-                                        className={`text-sm font-medium leading-normal flex items-center justify-center rounded-lg border px-4 h-10 ${
-                                            checked
-                                                ? "border-[#30abe8] border-[3px] px-3.5"
-                                                : "border-[#d0dfe7]"
-                                        }`}
-                                        style={{ minWidth: 90 }}
-                                    >
-                                        <Text
-                                            className={`text-[#0e171b] ${
-                                                checked ? "font-bold" : ""
-                                            }`}
-                                        >
-                                            {opt}
-                                        </Text>
-                                    </Pressable>
-                                );
-                            })}
-                        </View>
-
-                        {/* Upload Image Title */}
-                        <Text className="text-[#0e171b] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-2 pt-5">
-                            Upload Image
-                        </Text>
-
-                        {/* Upload Area */}
-                        <View className="flex flex-col p-4">
-                            <View className="flex flex-col items-center gap-6 rounded-lg border-2 border-dashed border-[#d0dfe7] px-6 py-14">
-                                <View className="flex max-w-[480px] flex-col items-center gap-2">
-                                    <Text className="text-[#0e171b] text-lg font-bold leading-tight tracking-[-0.015em] max-w-[480px] text-center">
-                                        Upload Image
-                                    </Text>
-                                    <Text className="text-[#0e171b] text-sm font-normal leading-normal max-w-[480px] text-center">
-                                        Upload an image of your clothing item
-                                    </Text>
-                                </View>
-
+                <ScrollView
+                    contentContainerStyle={[
+                        {
+                            paddingBottom: 150,
+                            paddingTop: 20,
+                            paddingHorizontal: 10,
+                        },
+                        !imageUri &&
+                            !formVisible && {
+                                paddingBottom: 20,
+                                flexGrow: 1,
+                                justifyContent: "center",
+                            },
+                    ]}
+                    showsVerticalScrollIndicator={false}
+                >
+                    {/* --- SECTION 1: IMAGE PREVIEW --- */}
+                    <View className="px-4 mb-6">
+                        {imageUri ? (
+                            <View className="relative rounded-2xl overflow-hidden shadow-sm bg-white border border-gray-200 h-96">
+                                <Image
+                                    source={{ uri: imageUri }}
+                                    className="w-full h-full"
+                                    resizeMode="cover"
+                                />
+                                {/* Change Photo Button */}
                                 <Pressable
-                                    onPress={() => {
-                                        /* TODO: open image picker */
-                                        console.log("Upload tapped");
-                                    }}
-                                    className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-gray-300"
+                                    onPress={handleImagePicked}
+                                    className="absolute top-4 right-4 bg-black/60 px-3 py-1.5 rounded-full"
                                 >
-                                    <Text className="text-[#0e171b] text-sm font-bold">
-                                        Upload
+                                    <Text className="text-white font-semibold text-xs">
+                                        Change
                                     </Text>
                                 </Pressable>
                             </View>
-                        </View>
-
-                        <Text className="text-[#0e171b] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-2 pt-5">
-                            Tags
-                        </Text>
-
-                        <View className="flex flex-row flex-wrap gap-3 p-3">
-                            <Pressable className="flex justify-center items-center border border-[#d0dfe7] rounded-lg text-sm font-medium leading-normal px-4 h-10">
-                                <Text>Tshirt</Text>
+                        ) : (
+                            <Pressable
+                                onPress={handleImagePicked}
+                                className="h-80 border-2 border-dashed border-slate-300 rounded-2xl bg-white items-center justify-center gap-4 active:bg-slate-50"
+                            >
+                                <View className="h-16 w-16 bg-blue-50 rounded-full items-center justify-center">
+                                    <Camera size={32} color="#3b82f6" />
+                                </View>
+                                <View className="items-center">
+                                    <Text className="text-lg font-bold text-slate-700">
+                                        Upload Photo
+                                    </Text>
+                                    <Text className="text-slate-400 text-sm">
+                                        Tap to select from gallery
+                                    </Text>
+                                </View>
                             </Pressable>
-                            <Pressable className="flex justify-center items-center border border-[#d0dfe7] rounded-lg text-sm font-medium leading-normal px-4 h-10">
-                                <Text>Baggy</Text>
+                        )}
+                    </View>
+
+                    {/* --- SECTION 2: AI ACTION (Only if Image exists & Form Hidden) --- */}
+                    {imageUri && !formVisible && (
+                        <View className="px-4 gap-4">
+                            <Pressable
+                                onPress={handleGenerate}
+                                disabled={isAnalyzing}
+                                className="flex-row items-center justify-center bg-primary h-14 rounded-xl shadow-indigo-200 shadow-lg"
+                            >
+                                {isAnalyzing ? (
+                                    <ActivityIndicator color="white" />
+                                ) : (
+                                    <>
+                                        <Wand2 size={20} color="white" />
+                                        <Text className="text-white font-bold text-lg ml-2">
+                                            Generate Details
+                                        </Text>
+                                    </>
+                                )}
                             </Pressable>
-                            <Pressable className="flex justify-center items-center border border-[#d0dfe7] rounded-lg text-sm font-medium leading-normal px-4 h-10">
-                                <Text>
-                                    <Plus size={18} />
+
+                            <Pressable
+                                onPress={handleManualEntry}
+                                className="items-center py-2"
+                            >
+                                <Text className="text-slate-500 font-medium">
+                                    Skip and fill manually
                                 </Text>
                             </Pressable>
                         </View>
+                    )}
 
-                        {/* Description */}
-                        <Text className="text-[#0e171b] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-2 pt-5">
-                            Description
-                        </Text>
+                    {/* --- SECTION 3: DETAILS FORM (Revealed) --- */}
+                    {formVisible && (
+                        <View className="px-4 animate-fade-in-up">
+                            {/* Category */}
+                            <Text className="text-slate-900 text-lg font-bold mb-3">
+                                Category
+                            </Text>
+                            <View className="flex-row gap-3 mb-6">
+                                {clothingOptions.map((opt) => {
+                                    const checked = clothingType === opt;
+                                    return (
+                                        <Pressable
+                                            key={opt}
+                                            onPress={() => setClothingType(opt)}
+                                            className={`flex-1 h-12 justify-center items-center rounded-xl border ${
+                                                checked
+                                                    ? "bg-black border-black"
+                                                    : "bg-white border-slate-200"
+                                            }`}
+                                        >
+                                            <Text
+                                                className={`font-semibold ${
+                                                    checked
+                                                        ? "text-white"
+                                                        : "text-slate-600"
+                                                }`}
+                                            >
+                                                {opt}
+                                            </Text>
+                                        </Pressable>
+                                    );
+                                })}
+                            </View>
 
-                        <View className="flex px-4 pb-4">
-                            <TextInput
-                                value={description}
-                                onChangeText={setDescription}
-                                placeholder="Add a description (optional)"
-                                placeholderTextColor="#4e7f97"
-                                className="flex w-full resize-none rounded-lg text-[#0e171b] border border-[#d0dfe7] bg-white p-4 text-base font-normal"
-                                multiline
-                                numberOfLines={5}
-                                textAlignVertical="top"
-                                style={{ minHeight: 120 }}
-                            />
-                        </View>
-                        {/* <View className="flex max-w-[480px] flex-wrap items-end gap-4 px-4 py-3">
-                            <View className="flex flex-col min-w-40 flex-1 w-full">
+                            {/* Description */}
+                            <Text className="text-slate-900 text-lg font-bold mb-3">
+                                Description
+                            </Text>
+                            <View className="bg-white rounded-xl border border-slate-200 p-2 mb-6">
                                 <TextInput
                                     value={description}
                                     onChangeText={setDescription}
-                                    placeholder="Description (optional)"
-                                    placeholderTextColor="#4e7f97"
-                                    className="flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-[#0e171b] border border-[#d0dfe7] bg-slate-50 p-4 text-base font-normal"
+                                    placeholder="Enter description..."
                                     multiline
-                                    numberOfLines={5}
+                                    className="text-base text-slate-800 min-h-[80px]"
+                                    textAlignVertical="top"
                                 />
                             </View>
-                        </View> */}
-                    </View>
-                </View>
-            </ScrollView>
 
-            {/* Bottom area */}
-            {/* Floating Bottom Button - Above Tab Bar */}
-            <View
-                className="absolute bottom-0 left-0 right-0 px-4 py-2"
-                // style={{
-                //     // shadowColor: "#000",
-                //     shadowOffset: { width: 0, height: -2 },
-                //     // shadowOpacity: 0.1,
-                //     shadowRadius: 8,
-                //     elevation: 5,
-                // }}
-            >
-                <Pressable
-                    onPress={handleUploadPress}
-                    disabled={isUploading}
-                    className={`flex items-center justify-center rounded-lg h-12 px-5 ${
-                        isUploading ? "bg-[#30abe8]/70" : "bg-[#30abe8]"
-                    }`}
-                >
-                    <Text className="text-white text-base font-bold">
-                        {isUploading ? "Uploading..." : "Upload"}
-                    </Text>
-                </Pressable>
-            </View>
+                            {/* Tags */}
+                            <Text className="text-slate-900 text-lg font-bold mb-3">
+                                Tags
+                            </Text>
+                            <View className="flex-row flex-wrap gap-2 mb-3">
+                                {tags.map((tag, index) => (
+                                    <View
+                                        key={index}
+                                        className="flex-row items-center bg-gray-200 border border-gray-200 rounded-lg px-4 py-1.5"
+                                    >
+                                        <Text className="text-black font-medium mr-1">
+                                            {tag}
+                                        </Text>
+                                        <Pressable
+                                            onPress={() => handleRemoveTag(tag)}
+                                        >
+                                            <X size={14} color="#000000" />
+                                        </Pressable>
+                                    </View>
+                                ))}
+                            </View>
+                            <View className="flex-row gap-2 mb-6">
+                                <TextInput
+                                    value={currentTag}
+                                    onChangeText={setCurrentTag}
+                                    placeholder="Add tag..."
+                                    className="flex-1 h-12 bg-white border border-slate-200 rounded-xl px-4"
+                                    onSubmitEditing={handleAddTag}
+                                />
+                                <Pressable
+                                    onPress={handleAddTag}
+                                    className="h-12 w-12 bg-slate-900 rounded-xl items-center justify-center"
+                                >
+                                    <Plus size={24} color="white" />
+                                </Pressable>
+                            </View>
+                        </View>
+                    )}
+                </ScrollView>
+            </KeyboardAvoidingView>
+
+            {/* Sticky Footer Button */}
+            {formVisible && (
+                <View className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-slate-100 shadow-lg">
+                    <Pressable
+                        onPress={handleSave}
+                        // disabled={isUploading || !clothingType}
+                        className={`h-14 rounded-xl flex-row items-center justify-center gap-2 ${
+                            isUploading || !clothingType
+                                ? "bg-slate-300"
+                                : "bg-green-600"
+                        }`}
+                    >
+                        {isUploading ? (
+                            <ActivityIndicator color="white" />
+                        ) : (
+                            <>
+                                <Save size={20} color="white" />
+                                <Text className="text-white text-lg font-bold">
+                                    Save Item
+                                </Text>
+                            </>
+                        )}
+                    </Pressable>
+                </View>
+            )}
         </SafeAreaView>
     );
 }

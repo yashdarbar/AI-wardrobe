@@ -1,4 +1,4 @@
-import { View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
 import "./globals.css";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
@@ -25,16 +25,15 @@ export default function Index() {
         return () => subscription.unsubscribe();
     }, []);
 
+    if (!isLoaded)
+        return (
+            <View className="flex-1 items-center justify-center bg-white">
+                <ActivityIndicator />
+            </View>
+        );
+
     return (
         <View className="flex-1 items-center justify-center bg-white">
-            {/*
-          <Link href="/(tabs)" asChild>
-              <TouchableOpacity className="bg-black px-6 py-3 rounded-2xl">
-                  <Text className="text-white font-semibold">
-                      Start Exploring
-                  </Text>
-              </TouchableOpacity>
-          </Link> */}
             {session && session.user ? (
                 <Landing />
             ) : (

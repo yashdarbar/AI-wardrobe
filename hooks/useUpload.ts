@@ -63,8 +63,9 @@ export const useUpload = () => {
 
             if (dbError) throw dbError;
 
-            Alert.alert("Success", "Item added to your wardrobe!");
+            // Alert.alert("Success", "Item added to your wardrobe!");
             resetState();
+            return true;
         } catch (error: any) {
             console.error(error);
             Alert.alert("Upload Failed", error.message);
