@@ -1,3 +1,4 @@
+//hooks/useWardrobe.ts
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useQuery } from "@tanstack/react-query";

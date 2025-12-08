@@ -1,3 +1,4 @@
+//hooks/useGemini.ts
 import { useState } from "react";
 import { generateClothingDetails, AIAnalysisResult } from "@/lib/gemini";
 import { Alert } from "react-native";

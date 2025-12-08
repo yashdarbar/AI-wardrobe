@@ -2,7 +2,14 @@ import { useWardrobe, ClothingItem } from "@/hooks/useWardrobe";
 import { useRouter } from "expo-router";
 import { Plus } from "lucide-react-native";
 import { useState } from "react";
-import { View, Text, Pressable, Image, ActivityIndicator, FlatList } from "react-native";
+import {
+    View,
+    Text,
+    Pressable,
+    Image,
+    ActivityIndicator,
+    FlatList,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Collection() {
@@ -21,21 +28,28 @@ export default function Collection() {
     // console.log("DATA", wardrobe)
 
     const renderItem = ({ item }: { item: ClothingItem }) => {
-
-        return (<Pressable
-            key={item.id}
-            className="flex-1 m-1.5 overflow-hidden rounded-lg bg-white shadow-sm"
-            style={{ width: 150, height: 255, aspectRatio: 1 / 1.5 }}
-        >
-            <Image
-                source={{ uri: item.image_url }}
-                style={{
-                    width: '100%',
-                    height: '100%'
-                }}
-                resizeMode="cover"
-            />
-        </Pressable>);
+        return (
+            <Pressable
+                key={item.id}
+                className="flex-1 m-1.5 overflow-hidden rounded-lg bg-white shadow-sm"
+                style={{ width: 150, height: 255, aspectRatio: 1 / 1.5 }}
+                onPress={() =>
+                    router.push({
+                        pathname: "/collection/[id]", // Matches the filename exactly
+                        params: { id: item.id }, // Passes the dynamic ID safely
+                    })
+                }
+            >
+                <Image
+                    source={{ uri: item.image_url }}
+                    style={{
+                        width: "100%",
+                        height: "100%",
+                    }}
+                    resizeMode="cover"
+                />
+            </Pressable>
+        );
     };
 
     return (
@@ -82,15 +96,21 @@ export default function Collection() {
 
             {isLoading && (
                 <View className="flex-1 justify-center items-center">
-                    <ActivityIndicator size="large" color="#000000"/>
-                    <Text className="mt-4 text-slate-600">Loading your wardrobe...</Text>
+                    <ActivityIndicator size="large" color="#000000" />
+                    <Text className="mt-4 text-slate-600">
+                        Loading your wardrobe...
+                    </Text>
                 </View>
             )}
 
             {error && (
                 <View className="flex-1 justify-center items-center">
-                    <Text className="text-red-500 font-bold">Error: {error.message}</Text>
-                    <Text className="mt-2 text-slate-500">Could not fetch your item.</Text>
+                    <Text className="text-red-500 font-bold">
+                        Error: {error.message}
+                    </Text>
+                    <Text className="mt-2 text-slate-500">
+                        Could not fetch your item.
+                    </Text>
                 </View>
             )}
 
@@ -101,12 +121,16 @@ export default function Collection() {
                     keyExtractor={(item) => item.id}
                     numColumns={2}
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ padding: 10, flexGrow: 1}}
-                    columnWrapperStyle={{ justifyContent: 'space-between'}}
+                    contentContainerStyle={{ padding: 10, flexGrow: 1 }}
+                    columnWrapperStyle={{ justifyContent: "space-between" }}
                     ListEmptyComponent={
                         <View className="flex-1 items-center justify-center pt-20">
-                            <Text className="text-lg text-slate-500">Wardrobe is empty!</Text>
-                            <Text className="text-slate-400 mt-2">Time to upload your first item. 👆</Text>
+                            <Text className="text-lg text-slate-500">
+                                Wardrobe is empty!
+                            </Text>
+                            <Text className="text-slate-400 mt-2">
+                                Time to upload your first item. 👆
+                            </Text>
                         </View>
                     }
                 />
