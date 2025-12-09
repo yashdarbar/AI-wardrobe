@@ -2,66 +2,44 @@ import React, { useState } from "react";
 import {
     View,
     Text,
-    Image,
     TextInput,
     TouchableOpacity,
     FlatList,
+    Image,
     KeyboardAvoidingView,
     Platform,
-    StatusBar,
+    ActivityIndicator,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 
-// --- Mock Data: Separated into User Question vs AI Response ---
-const MOCK_MESSAGES = [
-    {
-        id: "1",
-        sender: "user",
-        text: "I have a casual party, what can I wear?",
-        isOutfit: false,
-    },
-    {
-        id: "2",
-        sender: "ai",
-        text: "I found this great combination for you!",
-        isOutfit: true,
-        outfitData: {
-            topImage:
-                "https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=1000&auto=format&fit=crop",
-            bottomImage:
-                "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?q=80&w=1000&auto=format&fit=crop",
-        },
-    },
-];
+// Hooks
+import { useWardrobe } from "@/hooks/useWardrobe";
+import { usePairChat, ChatMessage } from "@/hooks/usePairChat";
 
-const AVATAR_URL = "https://i.pravatar.cc/150?u=a042581f4e29026704d";
+const AVATAR_URL = "https://i.pravatar.cc/150?u=ai-wardrobe-bot";
 
 export default function PairChat() {
     const [inputText, setInputText] = useState("");
-    const [messages, setMessages] = useState(MOCK_MESSAGES);
-    const router = useRouter();
+
+    // 1. Fetch Wardrobe Data (The Context)
+    const { data: wardrobe } = useWardrobe("All");
+
+    // 2. Initialize Chat Logic
+    const { messages, isThinking, sendMessage } = usePairChat(wardrobe || []);
 
     const handleSend = () => {
         if (inputText.trim()) {
-            const newMessage = {
-                id: Date.now().toString(),
-                sender: "user",
-                text: inputText,
-                isOutfit: false,
-            };
-            // Add new message to the list
-            setMessages([...messages, newMessage]);
+            sendMessage(inputText);
             setInputText("");
         }
     };
 
-    const renderMessage = ({ item }) => {
-        // --- USER MESSAGE (Right Side) ---
+    const renderMessage = ({ item }: { item: ChatMessage }) => {
+        // --- USER MESSAGE ---
         if (item.sender === "user") {
             return (
-                <View className="flex-row justify-end mb-4">
+                <View className="flex-row justify-end mb-4 px-4">
                     <View className="bg-[#33A6E3] p-3 rounded-2xl rounded-br-sm max-w-[80%]">
                         <Text className="text-white text-[15px]">
                             {item.text}
@@ -71,68 +49,81 @@ export default function PairChat() {
             );
         }
 
-        // --- AI MESSAGE (Left Side) ---
+        // --- AI MESSAGE ---
         return (
-            <View className="flex-row mb-6 items-start">
+            <View className="flex-row mb-6 items-start px-4">
                 {/* Avatar */}
                 <View className="mr-3 mt-1">
                     <Image
                         source={{ uri: AVATAR_URL }}
-                        className="w-9 h-9 rounded-full border border-gray-200"
+                        className="w-8 h-8 rounded-full border border-gray-200"
                     />
                 </View>
 
                 <View className="flex-1">
-                    <Text className="text-xs text-slate-600 mb-1 font-semibold">
-                        AI Assistant
+                    <Text className="text-xs text-slate-500 mb-1 font-bold">
+                        Stylist AI
                     </Text>
 
-                    {/* AI Text Bubble */}
-                    <View className="bg-[#E8F1F5] p-3 rounded-xl rounded-tl-sm mb-3 self-start">
-                        <Text className="text-gray-800 text-[15px]">
+                    {/* Text Bubble */}
+                    <View className="bg-[#F0F2F5] p-3 rounded-xl rounded-tl-sm mb-3 self-start">
+                        <Text className="text-gray-800 text-[15px] leading-5">
                             {item.text}
                         </Text>
                     </View>
 
-                    {/* Outfit Suggestion Card */}
-                    {item.isOutfit && (
-                        <View className="w-full">
-                            {/* Stacked Images */}
-                            <View className="rounded-2xl overflow-hidden mb-3">
-                                <Image
-                                    source={{ uri: item.outfitData.topImage }}
-                                    className="w-full h-[200px]"
-                                    resizeMode="cover"
-                                />
-                                <Image
-                                    source={{
-                                        uri: item.outfitData.bottomImage,
-                                    }}
-                                    className="w-full h-[180px] -mt-1"
-                                    resizeMode="cover"
-                                />
+                    {/* OUTFIT CARD (If Gemini found clothes) */}
+                    {item.isOutfit && item.outfitItems && (
+                        <View className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden w-full max-w-[280px]">
+                            {/* Header */}
+                            {item.occasion && (
+                                <View className="bg-gray-50 px-3 py-2 border-b border-gray-100">
+                                    <Text className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                        {item.occasion}
+                                    </Text>
+                                </View>
+                            )}
+
+                            {/* Images Grid */}
+                            <View className="flex-row flex-wrap">
+                                {item.outfitItems.map((cloth, index) => (
+                                    <Image
+                                        key={cloth.id}
+                                        source={{ uri: cloth.image_url }}
+                                        className={`h-40 flex-1 ${
+                                            index === 0 ? "mr-0.5" : "ml-0.5"
+                                        }`}
+                                        resizeMode="cover"
+                                    />
+                                ))}
                             </View>
 
-                            {/* Action Buttons */}
-                            <View className="flex-row justify-between gap-3 mb-3">
-                                <TouchableOpacity className="flex-1 bg-[#E8F1F5] py-3 rounded-lg items-center">
-                                    <Text className="text-black font-semibold text-sm">
-                                        Save Pair
+                            {/* Actions */}
+                            <View className="p-3 gap-2">
+                                <TouchableOpacity
+                                    className="bg-[#33A6E3] py-2.5 rounded-lg items-center"
+                                    onPress={() =>
+                                        alert(
+                                            "Try On Feature coming in Phase 2!"
+                                        )
+                                    }
+                                >
+                                    <Text className="text-white font-bold text-sm">
+                                        Try on Me
                                     </Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity className="flex-1 bg-[#E8F1F5] py-3 rounded-lg items-center">
-                                    <Text className="text-black font-semibold text-sm">
-                                        Regenerate
+
+                                <TouchableOpacity
+                                    className="bg-gray-100 py-2.5 rounded-lg items-center"
+                                    onPress={() =>
+                                        alert("Save Feature coming in Phase 3!")
+                                    }
+                                >
+                                    <Text className="text-gray-700 font-semibold text-sm">
+                                        Save Outfit
                                     </Text>
                                 </TouchableOpacity>
                             </View>
-
-                            {/* Main Button */}
-                            <TouchableOpacity className="bg-[#33A6E3] py-3.5 rounded-lg items-center w-full">
-                                <Text className="text-white font-bold text-base">
-                                    Try on Me
-                                </Text>
-                            </TouchableOpacity>
                         </View>
                     )}
                 </View>
@@ -142,45 +133,61 @@ export default function PairChat() {
 
     return (
         <SafeAreaView className="flex-1 bg-white">
-            <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-
             {/* Header */}
-            <View className="flex-row items-center justify-between px-5 py-4 border-b border-gray-100">
-                <TouchableOpacity onPress={()=> router.back()}>
-                    <Ionicons name="arrow-back" size={24} color="#333" />
-                </TouchableOpacity>
-                <Text className="text-lg font-bold text-black">PairChat</Text>
-                <View className="w-6" />
+            <View className="flex-row items-center justify-center p-4 p-3 border-b border-gray-100">
+                <Text className="text-lg font-bold text-slate-800">
+                    PairChat
+                </Text>
+                {/* <Ionicons name="sparkles-outline" size={20} color="#33A6E3" /> */}
             </View>
-
-            {/* Chat List (Inverted for natural chat behavior) */}
-            <FlatList
-                inverted
-                data={[...messages].reverse()} // Reverse data so newest is at the bottom
-                renderItem={renderMessage}
-                keyExtractor={(item) => item.id}
-                className="flex-1"
-                contentContainerStyle={{
-                    paddingHorizontal: 16,
-                    paddingVertical: 20,
-                }}
-                showsVerticalScrollIndicator={false}
-            />
 
             {/* Input Area */}
             <KeyboardAvoidingView
+                style={{ flex: 1 }}
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
-                keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+                keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
             >
-                <View className="px-4 py-3 bg-white border-t border-gray-100">
-                    <TextInput
-                        className="bg-[#E8F1F5] px-4 py-3.5 rounded-xl text-base text-gray-800"
-                        placeholder="Ask me anything..."
-                        placeholderTextColor="#888"
-                        value={inputText}
-                        onChangeText={setInputText}
-                        onSubmitEditing={handleSend}
-                    />
+                {/* Chat List */}
+                <FlatList
+                    inverted
+                    data={messages}
+                    renderItem={renderMessage}
+                    keyExtractor={(item) => item.id}
+                    contentContainerStyle={{ paddingVertical: 20 }}
+                    showsVerticalScrollIndicator={false}
+                />
+
+                <View className="px-4 py-3 mb-3 bg-white border-t border-gray-50">
+                    <View className="flex-row items-center gap-2">
+                        <TextInput
+                            className="flex-1 bg-gray-100 px-4 py-3 rounded-full text-base text-gray-800"
+                            placeholder={
+                                isThinking
+                                    ? "Consulting Stylist..."
+                                    : "Ask for an outfit..."
+                            }
+                            placeholderTextColor="#94A3B8"
+                            value={inputText}
+                            onChangeText={setInputText}
+                            onSubmitEditing={handleSend}
+                            editable={!isThinking}
+                        />
+                        <TouchableOpacity
+                            onPress={handleSend}
+                            disabled={isThinking || !inputText.trim()}
+                            className={`w-11 h-11 rounded-full items-center justify-center ${
+                                isThinking || !inputText.trim()
+                                    ? "bg-gray-200"
+                                    : "bg-[#33A6E3]"
+                            }`}
+                        >
+                            {isThinking ? (
+                                <ActivityIndicator color="#fff" size="small" />
+                            ) : (
+                                <Ionicons name="send" size={20} color="#fff" />
+                            )}
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </KeyboardAvoidingView>
         </SafeAreaView>
