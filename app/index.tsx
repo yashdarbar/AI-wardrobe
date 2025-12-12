@@ -43,3 +43,27 @@ export default function Index() {
         </View>
     );
 }
+
+// import { View } from "react-native";
+// import "./globals.css";
+// import { useEffect } from "react";
+// import { useRouter } from "expo-router";
+// import Auth from "@/components/Auth";
+// import { useAuthStore } from "@/stores/useAuthStore";
+
+// export default function Index() {
+//     const { session } = useAuthStore();
+//     const router = useRouter();
+
+//     useEffect(() => {
+//         if (session) {
+//             router.replace("/(tabs)/collection");
+//         }
+//     }, [session]);
+
+//     return (
+//         <View className="flex-1 items-center justify-center bg-white">
+//             <Auth />
+//         </View>
+//     );
+// }

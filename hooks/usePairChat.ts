@@ -50,7 +50,7 @@ export const usePairChat = (fullWardrobe: ClothingItem[] = []) => {
             if (!suggestion) throw new Error("Could not generate an outfit.");
 
             const matchedItems = fullWardrobe.filter((item) => suggestion.selected_item_ids.includes(item.id));
-            console.log("MATCHIms", matchedItems);
+            // console.log("MATCHIms", matchedItems);
 
             const aiMsg: ChatMessage = {
                 id: (Date.now() + 1).toString(),

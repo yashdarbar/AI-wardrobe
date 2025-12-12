@@ -1,8 +1,10 @@
 import { View, Text, Pressable, TouchableOpacity } from "react-native";
 import { Shirt } from "lucide-react-native";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 
 export default function Landing() {
+    const router = useRouter();
+
     return (
         <View className="flex-1 justify-center items-center w-full p-4">
             <View className="w-full max-w-md mb-20 p-2 items-center">
@@ -26,7 +28,7 @@ export default function Landing() {
 
                 <TouchableOpacity
                     className="w-full justify-center items-center bg-gray-300 border border-gray-300 rounded-lg p-2"
-                    onPress={() => alert("clicked")}
+                    onPress={() => router.push('/update-profile')}
                 >
                     <Text className="text-black">Update your profile</Text>
                 </TouchableOpacity>

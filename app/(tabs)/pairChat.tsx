@@ -9,13 +9,15 @@ import {
     KeyboardAvoidingView,
     Platform,
     ActivityIndicator,
+    Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
 // Hooks
-import { useWardrobe } from "@/hooks/useWardrobe";
+import { ClothingItem, useWardrobe } from "@/hooks/useWardrobe";
 import { usePairChat, ChatMessage } from "@/hooks/usePairChat";
+import { useVirtualTryOn } from "@/hooks/useVirtualTryOn";
 
 const AVATAR_URL = "https://i.pravatar.cc/150?u=ai-wardrobe-bot";
 
@@ -28,11 +30,36 @@ export default function PairChat() {
     // 2. Initialize Chat Logic
     const { messages, isThinking, sendMessage } = usePairChat(wardrobe || []);
 
+    const {
+        pickUserImage,
+        startTryOn,
+        userPhotoUri,
+        isProcessing,
+        statusMessage,
+        resultImage,
+        resetTryOn,
+    } = useVirtualTryOn();
+
+    const [isModalVisible, setModalVisible] = useState(false);
+    const [activeOutfitItems, setActiveOutfitItems] = useState<ClothingItem[]>(
+        []
+    );
+
     const handleSend = () => {
         if (inputText.trim()) {
             sendMessage(inputText);
             setInputText("");
         }
+    };
+
+    const handleTryOnClick = (items: ClothingItem[]) => {
+        setActiveOutfitItems(items);
+        setModalVisible(true);
+    };
+
+    const closeTryOnModal = () => {
+        setModalVisible(false);
+        resetTryOn();
     };
 
     const renderMessage = ({ item }: { item: ChatMessage }) => {
@@ -103,9 +130,7 @@ export default function PairChat() {
                                 <TouchableOpacity
                                     className="bg-[#33A6E3] py-2.5 rounded-lg items-center"
                                     onPress={() =>
-                                        alert(
-                                            "Try On Feature coming in Phase 2!"
-                                        )
+                                        handleTryOnClick(item.outfitItems!)
                                     }
                                 >
                                     <Text className="text-white font-bold text-sm">
@@ -190,6 +215,137 @@ export default function PairChat() {
                     </View>
                 </View>
             </KeyboardAvoidingView>
+
+            {/* --- VTO MODAL --- */}
+            <Modal
+                visible={isModalVisible}
+                animationType="slide"
+                presentationStyle="pageSheet"
+            >
+                <View className="flex-1 bg-white p-6">
+                    <View className="flex-row justify-between items-center mb-6">
+                        <Text className="text-xl font-bold text-gray-800">
+                            Virtual Try-On
+                        </Text>
+                        <TouchableOpacity onPress={closeTryOnModal}>
+                            <Ionicons
+                                name="close-circle"
+                                size={30}
+                                color="#E2E8F0"
+                            />
+                        </TouchableOpacity>
+                    </View>
+
+                    <View className="flex-1 items-center justify-center">
+                        {/* State 3: Result */}
+                        {resultImage ? (
+                            <View className="w-full h-full items-center">
+                                <Image
+                                    source={{ uri: resultImage }}
+                                    className="w-full h-[65%] rounded-2xl mb-6 bg-gray-50"
+                                    resizeMode="contain"
+                                />
+                                <Text className="text-green-600 font-bold text-lg mb-4">
+                                    ✨ Outfit Generated!
+                                </Text>
+                                <TouchableOpacity
+                                    className="bg-black w-full py-4 rounded-xl items-center"
+                                    onPress={() =>
+                                        alert("Save Feature coming in Phase 3!")
+                                    }
+                                >
+                                    <Text className="text-white font-bold text-lg">
+                                        Save to Collection
+                                    </Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    className="mt-4"
+                                    onPress={resetTryOn} // Try again
+                                >
+                                    <Text className="text-gray-500 font-semibold">
+                                        Try Different Photo
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
+                        ) : (
+                            /* State 1 & 2: Upload & Processing */
+                            <View className="w-full items-center">
+                                {/* Photo Preview Box */}
+                                <View className="w-64 h-80 bg-gray-50 rounded-2xl mb-8 items-center justify-center overflow-hidden border-2 border-dashed border-gray-200">
+                                    {userPhotoUri ? (
+                                        <Image
+                                            source={{ uri: userPhotoUri }}
+                                            // className="w-full h-full"
+                                            style={{
+                                                width: "100%",
+                                                height: "100%",
+                                            }}
+                                            resizeMode="cover"
+                                        />
+                                    ) : (
+                                        <View className="items-center opacity-40">
+                                            <Ionicons
+                                                name="person"
+                                                size={60}
+                                                color="#94A3B8"
+                                            />
+                                            <Text className="text-gray-500 font-medium mt-3">
+                                                No Photo Selected
+                                            </Text>
+                                        </View>
+                                    )}
+                                </View>
+
+                                {/* Status / Loading */}
+                                {isProcessing ? (
+                                    <View className="items-center mb-8">
+                                        <ActivityIndicator
+                                            size="large"
+                                            color="#33A6E3"
+                                        />
+                                        <Text className="text-[#33A6E3] font-semibold mt-4 text-center">
+                                            {statusMessage ||
+                                                "Generating your look..."}
+                                        </Text>
+                                    </View>
+                                ) : (
+                                    /* Action Buttons */
+                                    <View className="w-full gap-3">
+                                        {!userPhotoUri ? (
+                                            <TouchableOpacity
+                                                className="bg-black w-full py-4 rounded-xl items-center flex-row justify-center gap-2"
+                                                onPress={pickUserImage}
+                                            >
+                                                <Ionicons
+                                                    name="image-outline"
+                                                    size={20}
+                                                    color="#fff"
+                                                />
+                                                <Text className="text-white font-bold text-lg">
+                                                    Upload Full Body Photo
+                                                </Text>
+                                            </TouchableOpacity>
+                                        ) : (
+                                            <TouchableOpacity
+                                                className="bg-[#33A6E3] w-full py-4 rounded-xl items-center"
+                                                onPress={() =>
+                                                    startTryOn(
+                                                        activeOutfitItems
+                                                    )
+                                                }
+                                            >
+                                                <Text className="text-white font-bold text-lg">
+                                                    Generate Try-On
+                                                </Text>
+                                            </TouchableOpacity>
+                                        )}
+                                    </View>
+                                )}
+                            </View>
+                        )}
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 }
