@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { use, useId, useReducer, useState } from "react";
 import {
     View,
     Text,
     TextInput,
     ScrollView,
     Pressable,
+    Alert,
 } from "react-native";
 import { Feather } from "@expo/vector-icons"; // Using Feather for generic icons
 import { useRouter } from "expo-router";
@@ -12,49 +13,50 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 // --- CONSTANTS ---
 import { GENDER_OPTIONS, BODY_TYPE_OPTIONS, FIT_PREFERENCE, STYLE_OPTIONS, COLOR_OPTIONS} from "@/constants/constants"
+import { initialState, profileReducer } from "@/reducers/profileReducer";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { supabase } from "@/lib/supabase";
 
 export default function UpdateProfileModal() {
     const router = useRouter();
+    const { session } = useAuthStore();
 
-    // --- STATE ---
-    const [username, setUsername] = useState("Jane Doe");
-    const [website, setWebsite] = useState("");
-    const [gender, setGender] = useState(null);
-    const [bodyType, setBodyType] = useState(null);
-    const [fitPreference, setFitPreference] = useState(null);
-    const [selectedStyles, setSelectedStyles] = useState([]);
-    const [prefColors, setPrefColors] = useState([]);
+    const [state, dispatch] = useReducer(profileReducer, initialState);
+    const [isSaving, setIsSaving] = useState(false);
 
-    // --- HANDLERS ---
-    const toggleStyle = (style) => {
-        if (selectedStyles.includes(style)) {
-            setSelectedStyles(selectedStyles.filter((s) => s !== style));
-        } else {
-            setSelectedStyles([...selectedStyles, style]);
+    const handleSave = async () => {
+        try {
+            setIsSaving(true)
+            const userId = session?.user.id;
+            if (!userId) throw new Error("No user found");
+
+            const updates = {
+                username: state.username,
+                avatar_url: state.website,
+                gender: state.gender,
+                body_type: state.bodyType,
+                style_preferences: state.selectedStyles,
+                fit_preference: state.fitPreference,
+                preferred_colors: state.prefColors,
+                updated_at: new Date(),
+            };
+
+            const { error } = await supabase.from("profiles").update(updates).eq("id", userId);
+
+            if (error) throw error;
+
+            router.back()
+
+        } catch (error) {
+            console.error(error);
+            Alert.alert("Error", "Could not update profile. Please try again.");
+        } finally {
+            setIsSaving(false);
         }
-    };
-
-    const toggleColor = (colorName) => {
-        if (prefColors.includes(colorName)) {
-            setPrefColors(prefColors.filter((c) => c !== colorName));
-        } else {
-            setPrefColors([...prefColors, colorName]);
-        }
-    };
-
-    const handleSave = () => {
-        console.log({
-            gender,
-            bodyType,
-            fitPreference,
-            selectedStyles,
-            prefColors,
-        });
-        router.back();
     };
 
     // --- REUSABLE OPTION COMPONENT (Based on your snippet) ---
-    const OptionButton = ({ label, isSelected, onPress, isMulti = false }) => (
+    const OptionButton = ({ label, isSelected, onPress, isMulti = false } : any ) => (
         <Pressable
             onPress={onPress}
             className={`justify-center items-center rounded-xl border mb-2 ${
@@ -104,8 +106,8 @@ export default function UpdateProfileModal() {
                 {/* Username Input */}
                 <View className="bg-white rounded-xl border border-slate-200 p-2 mb-4 justify-center">
                     <TextInput
-                        value={username}
-                        onChangeText={setUsername}
+                        value={state.username}
+                        onChangeText={(text) => dispatch({ type: "SET_TEXT", field: "username", value: text})}
                         placeholder="Username"
                         className="text-base text-slate-800 px-2"
                     />
@@ -114,8 +116,8 @@ export default function UpdateProfileModal() {
                 {/* Website Input */}
                 <View className="bg-white rounded-xl border border-slate-200 p-2 mb-8 justify-center">
                     <TextInput
-                        value={website}
-                        onChangeText={setWebsite}
+                        value={state.website}
+                        onChangeText={(text) => dispatch({type: "SET_TEXT", field: "website", value: text})}
                         placeholder="Website"
                         className="text-base text-slate-800 px-2"
                     />
@@ -132,8 +134,8 @@ export default function UpdateProfileModal() {
                         <OptionButton
                             key={opt}
                             label={opt}
-                            isSelected={gender === opt}
-                            onPress={() => setGender(opt)}
+                            isSelected={state.gender === opt}
+                            onPress={() => dispatch({ type: "SET_SINGLE", field: "gender", value: opt })}
                             isMulti={true} // Using multi-style for layout, but logic is single
                         />
                     ))}
@@ -148,8 +150,8 @@ export default function UpdateProfileModal() {
                         <OptionButton
                             key={opt}
                             label={opt}
-                            isSelected={bodyType === opt}
-                            onPress={() => setBodyType(opt)}
+                            isSelected={state.bodyType === opt}
+                            onPress={() => dispatch({ type: "SET_SINGLE", field: "bodyType", value: opt})}
                         />
                     ))}
                 </View>
@@ -163,8 +165,8 @@ export default function UpdateProfileModal() {
                         <OptionButton
                             key={opt}
                             label={opt}
-                            isSelected={fitPreference === opt}
-                            onPress={() => setFitPreference(opt)}
+                            isSelected={state.fitPreference === opt}
+                            onPress={() => dispatch({ type: "SET_SINGLE", field: "fitPreference", value: opt})}
                         />
                     ))}
                 </View>
@@ -178,8 +180,8 @@ export default function UpdateProfileModal() {
                         <OptionButton
                             key={opt}
                             label={opt}
-                            isSelected={selectedStyles.includes(opt)}
-                            onPress={() => toggleStyle(opt)}
+                            isSelected={state.selectedStyles.includes(opt)}
+                            onPress={() => dispatch({ type: "TOGGLE_STYLE", value: opt})}
                             isMulti={true}
                         />
                     ))}
@@ -191,11 +193,11 @@ export default function UpdateProfileModal() {
                 </Text>
                 <View className="flex-row flex-wrap gap-3 mb-10">
                     {COLOR_OPTIONS.map((c) => {
-                        const isSelected = prefColors.includes(c.name);
+                        const isSelected = state.prefColors.includes(c.name);
                         return (
                             <Pressable
                                 key={c.name}
-                                onPress={() => toggleColor(c.name)}
+                                onPress={() => dispatch({ type: "TOGGLE_COLOR", value: c.name})}
                                 className={`w-12 h-12 rounded-full items-center justify-center border-2 ${
                                     isSelected
                                         ? "border-slate-900"
